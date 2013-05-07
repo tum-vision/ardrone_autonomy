@@ -2,6 +2,7 @@
 #include "teleop_twist.h"
 #include "video.h"
 #include <signal.h>
+#include "ros/package.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // class ARDroneDriver
@@ -69,11 +70,10 @@ ARDroneDriver::ARDroneDriver()
         ROS_WARN("Automatic IMU Caliberation is active.");
     }
 
-    // Camera Info Manager
-    cinfo_hori_ = new camera_info_manager::CameraInfoManager(ros::NodeHandle("ardrone/front"), "ardrone_front");
-    cinfo_vert_ = new camera_info_manager::CameraInfoManager(ros::NodeHandle("ardrone/bottom"), "ardrone_bottom");
 
-    // TF Stuff
+    // Camera Info Manager
+    cinfo_hori_ = 0;//new camera_info_manager::CameraInfoManager(node_handle, "ardrone_front", "file://" + path + "ardrone2_front/cal.yml");
+    cinfo_vert_ = 0;//new camera_info_manager::CameraInfoManager(node_handle, "ardrone_bottom", "file://" + path + "ardrone2_bottom/cal.yml");
 
 
     // Front Cam to Base
@@ -332,8 +332,7 @@ void ARDroneDriver::publish_video()
             (vert_pub.getNumSubscribers() == 0)
        ) return;
 
-    // Camera Info (NO PIP)
-
+    if(cinfo_hori_ == 0) return;
     sensor_msgs::CameraInfo cinfo_msg_hori = cinfo_hori_->getCameraInfo();
     sensor_msgs::CameraInfo cinfo_msg_vert = cinfo_vert_->getCameraInfo();
 
@@ -363,7 +362,12 @@ void ARDroneDriver::publish_video()
         sensor_msgs::Image image_msg;
         sensor_msgs::Image::_data_type::iterator _it;
 
+
         image_msg.header.stamp = ros::Time::now();
+        cinfo_msg_hori.header.stamp = image_msg.header.stamp;
+        cinfo_msg_vert.header.stamp = image_msg.header.stamp;
+
+
         if ((cam_state == ZAP_CHANNEL_HORI) || (cam_state == ZAP_CHANNEL_LARGE_HORI_SMALL_VERT))
         {
             image_msg.header.frame_id = droneFrameFrontCam;
@@ -594,6 +598,27 @@ void ARDroneDriver::publish_video()
 
 void ARDroneDriver::publish_navdata(navdata_unpacked_t &navdata_raw, const ros::Time &navdata_receive_time)
 {
+	if(cinfo_hori_ == 0)
+	{
+		std::string path = ros::package::getPath("ardrone_autonomy")+"/calibrations/";
+		if(IS_ARDRONE2)
+		{
+			cinfo_hori_ = new camera_info_manager::CameraInfoManager(node_handle, "ardrone_front", "file://" + path + "ardrone2_front/cal.yml");
+			cinfo_vert_ = new camera_info_manager::CameraInfoManager(node_handle, "ardrone_bottom", "file://" + path + "ardrone2_bottom/cal.yml");
+		}
+		else
+		{
+			cinfo_hori_ = new camera_info_manager::CameraInfoManager(node_handle, "ardrone_front", "file://" + path + "ardrone1_front/cal.yml");
+			cinfo_vert_ = new camera_info_manager::CameraInfoManager(node_handle, "ardrone_bottom", "file://" + path + "ardrone1_bottom/cal.yml");
+		}
+
+		ROS_INFO("Loaded Camera Calibration Files");
+
+	}
+    // Camera Info Manager
+
+
+
     if ((do_caliberation) && (!caliberated))
     {
         acc_samples[0].push_back(navdata_raw.navdata_phys_measures.phys_accs[ACC_X]);
