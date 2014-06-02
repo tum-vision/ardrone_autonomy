@@ -71,14 +71,14 @@ extern "C" {
         {
             ardrone_application_default_config.max_bitrate = 4000;
         }
-
+        
         ardrone_application_default_config.control_vz_max = 1300;
         ardrone_application_default_config.outdoor_control_vz_max = 1300;
         ardrone_application_default_config.indoor_control_vz_max = 1300;
-        
+
         ardrone_application_default_config.outdoor = 0;
         ardrone_application_default_config.flight_without_shell = 0;
-        
+
         ardrone_application_default_config.navdata_options = NAVDATA_OPTION_FULL_MASK;        
         ardrone_application_default_config.video_channel = ZAP_CHANNEL_HORI;
         ardrone_application_default_config.control_level = (0 << CONTROL_LEVEL_COMBINED_YAW);
